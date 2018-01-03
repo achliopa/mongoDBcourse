@@ -107,3 +107,21 @@ const User = mongoose.model('user', UserSchema);
 * class methods are like remove class methods but they get as second argument an object literal with the param update
 
 # Section 7 - Mongo Operators
+
+## Update Operators
+
+* to add a new property to a model we need to update the model schema
+* updating the schema adding params doesnt break tests
+* if we want to increment a counter based on criteria we cab fetch the data  inc the counter and store them back. we want to avoid moving data between the db and our app. we use mongoDB operators like $inc, syntax:
+User.update({name: 'Joe'}, { $inc: { postCount: 1 }})
+* mongoose offers validation
+* validation can be doe in schema model by seting an object as value for a parameter {
+		type: String,
+		required: [true, 'Name is required.']
+	},
+* validation of an object can be done synchronously with validateSync() or asynchronously with validate() . the first return validationresult object when second gets a callback which itself get the cvalidation result as argument
+* validation can be done with a function where in the scema model attribute value object we set a parameter validate which gets an object with a method validator with custom logic. returning false fails and true passes validation
+validate: {
+			validator: (name) => name.length > 2,
+			message: 'Name must be longer than 2 characters.'
+		},
