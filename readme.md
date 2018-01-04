@@ -125,3 +125,38 @@ validate: {
 			validator: (name) => name.length > 2,
 			message: 'Name must be longer than 2 characters.'
 		},
+
+# Section 8 - Relational Data
+
+## Lecture 45 - Embedding Resources to Models
+
+* we can have multiple schemas but one Model (and one collection) where they are embedded as subdocuments.
+* embedding is done by adding the subdocument schema as a paramter objectype to the master document schema e.g 	post: [PostSchema]
+* because we dont have subdocument model to add more subdocuments of same type in an array of a record we need to set and save the master record. we can save only models
+* to chain promises we need to return a promise inside of then
+* when I remove a subdocument with remove() it is not removed from database . in contrast with model instances. this is because the subdocumet has no Model Class of itself but is embedded to the Model Class Schema.
+
+## Lecture 50 - Virtual Types/Fields/Properties
+
+* By embedding and having a separate subdocument counter as a property to the master record we have to keep track of it ourselves
+* virtual types are not saved in the db they are calculate on the fly anytime we retrieve a record. 
+* we remove it from the schema but some tests fail as a consequence
+* $inc doesnt work as it operates on a missing property
+* we dissable mocha  tests by changing it to xit
+* virtual property is defined outside of the schema with the virtual() function odf the scehma
+* virtual property definition makes use of ES6 get/set functionality
+** in standard JS when we write joe.postCOunt we go in the joe object and return the postCount value. this is a get function. in ES6 we can
+overwrite the standard functionality by making use of a get() function
+where we define our own custom logic. what we return in this custom function is what we get when we call the virtual type
+** this function will be a standard function not an arrow. because we want access to this . as this is the model instance containing the property(array) we want to count (posts)
+** syntax
+UserSchema.virtual('postCount')
+	.get(function() {
+		return this.posts.length;
+	});
+
+# Section 9 - Schema Design
+
+## Lecture 54 - Drawbacks of Nested Resources
+
+*
