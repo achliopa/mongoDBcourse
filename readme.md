@@ -159,4 +159,47 @@ UserSchema.virtual('postCount')
 
 ## Lecture 54 - Drawbacks of Nested Resources
 
-*
+* When we nest / embedd the subdocuments it is inefficient to query it in isolation. as we need to go through all partent documents to assemble the list. in a nutshell when the subdocument gets big or could be used separately should be a collection of its own (separate model)
+* its hard to implement complex relations like users-posts-comments with nested subrecords
+* we will implement another way of connecting subdocuments by creating 2 new models blogPost and comment with their Schemas and connecting the to user
+
+## Lecture 57 - Associations w/ Refs
+
+* we create the associations by using a specific objecttype for schema properties. e.g.
+
+const CommentSchema = new Schema({
+	content: String,
+	user: {
+		type: Schema.Types.ObjectId,
+		ref: 'user'
+	}
+});
+* we provide as type Schema.types.ObjectId and as ref the model definition we uses in the declaration
+* this is like the foreign key in relational databases.
+* we refactor the testhelper so as to drop multiple collections prior toi test. we need to do it sequentialy so we do callback nesting as they are asynchronous
+* be aware that mongoose normalizes collection names to all small letters no matter if we do it camelcase. so when we use mongoose.connection.collections we expect the name to be smallletter
+* setting associations is as easy as setting object properties. 
+e.g. 		blogPost.comments.push(comment);
+		comment.user = joe;
+* behind the scenes mongoose has custom setter which sets the association based on objectId
+* when we wanto run multiple async functions in parallel but want to set an exit point common for all (e.g. done()) we use ES6 Promise.all() where we pass an array containing the async functions. in th then statement we put our exit point
+* if we want to run a test in isolation in mocha we use it.only()
+* querying a record with an association does not bring the suddocument, only its id
+* the execution flow chain of a query in Mongo is the following 1) Model Class 2) Query Function with query object 3) Query Modifier 4) Executor (then() for ES6, promises, exec() for ES5 with callbacks)
+* the modifier can populate the subdocument in the parent record in a query e.g. User.findOne({name: 'Joe'})
+			.populate('blogPosts')
+			.then((user)
+* we cannot chain modifiers to get deep nested subdocuments. we can use single populate method but by chaining populate objects in it to query nested subdocuments
+e.g populate({
+				path: 'blogPosts',
+				populate: {
+					path: 'comments',
+					model: 'comment',
+					populate: {
+						path: 'user',
+						model: 'user'
+					}
+				}
+			}) 
+
+# Section 10 - Mongoose Middleware
