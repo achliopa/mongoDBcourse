@@ -207,4 +207,24 @@ e.g populate({
 ## Lecture 63 - CleanUp with Mongoose Middleware
 
 * we can asign a number of middlewares before the event (save, validate etd) and after the event ()
-* middlewares are assigned to the Schema as pre() or post() passing the event and the next callback like express middlewares
+* middlewares are assigned to the Schema as pre() or post() passing the event and the next callback like express middlewares. we use oldschool callback functions to access this. mongoose gives us a way to move all searching and delete to the db with $in. also this removes the need to import model class in the user model avoiding  code entagnling , loop imports which cause problem in startup of app. e.g.
+UserSchema.pre('remove', function(next) {
+	const BlogPost = mongoose.model('blogPost');
+	// this===model instance
+	BlogPost.remove({ _id: { $in: this.blogPosts }})
+		.then(()=> next());
+});
+
+# Section 11 - Big Collections/Paginations
+
+## Lecture 67 - Skip & Limit
+
+* skip and limit are query modifiers that implement pagination in the db using mongoose. syntax skip(number of records to skip) limit(page size)
+* query modifiers are moddlewares and chain
+* we can use sort as query modifier to sort our results. we pass in an object much like query object with the param to sort by and the order 1 is ascending
+e.g
+User.find({})
+			.sort({ name: 1 })
+			.skip(1)
+			.limit(2)
+			.then((users) =>
