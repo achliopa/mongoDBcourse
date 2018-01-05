@@ -203,3 +203,8 @@ e.g populate({
 			}) 
 
 # Section 10 - Mongoose Middleware
+
+## Lecture 63 - CleanUp with Mongoose Middleware
+
+* we can asign a number of middlewares before the event (save, validate etd) and after the event ()
+* middlewares are assigned to the Schema as pre() or post() passing the event and the next callback like express middlewares
