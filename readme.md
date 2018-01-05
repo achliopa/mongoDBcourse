@@ -242,3 +242,58 @@ User.find({})
 
 * we implement Artist Schema + Model, Album Schema and embedd Album Schema in Artist as as Subdocumet
 * first query: find random artist solution Artist.findById(_id);
+
+# Section 13 - Hard-Mode Project
+
+## Lecture 83 - Min/Max Queries
+
+* a simple solution is to get all items back with the query and then search through the array for min max. e.g
+	return Artist.find({}).sort({age: 1}).then((artists) => {
+			return ({min: artists[0].age, max: artists[artists.length-1].age});
+	});
+* this is not efficient because big data are moving through servers also searching is more efficient in db
+* we resolving it by doing 2 queries and limiting the results to 1.
+* then we cobine Promises with promise all. note that Promise.all resolves in then with an array containing the results of both async functions.
+* a good trick is to modify the resolving object in then by using the arrow function and returning what we want e.b .then(artist => artist.age)
+* also note that even when we limit results to 1 query still returns an array of model instances with length of 1
+e.g. 	const minQuery = Artist
+		.find({})
+		.sort({ age: 1})
+		.limit(1)
+		.then(artists => artists[0].age); 
+
+## Lecture 85 - Search Queries
+* passing variable ad object propery name
+** ES5 	const property = 'name';
+		const obj = {}; 
+		obj[property] = 1;
+** ES6  const obj = {[property]: 1 }
+* insert min and max to property values in the query object using mongoDB and mongoose operators $lt gt, lte, gte :
+		query.yearsActive = {
+			$gte: criteria.yearsActive.min,
+			$lte: criteria.yearsActive.max
+		}
+* switch dbs in mongo cli : use db_name
+* mongo supports super fast index search.
+* by default each collection document has an _id which is its index
+* ids are stored in a separate list to support fast queries e.g findById()
+* mongo supports indexing to only  one additional document param.
+* this is done in mongo cli with the command
+db.collection.createIndex({ property: "indextype"})
+* a supported indextype is text.
+* text index allows to add the $index query operrator in our query object performing text bases searches in the db which are FAST.
+* mongo replys with {
+	"createdCollectionAutomatically" : false,
+	"numIndexesBefore" : 1,
+	"numIndexesAfter" : 2,
+	"ok" : 1
+}
+
+* then we can issue a query like query.$text = { $search: criteria.name }; to perform text based search on the text indexed property (e.g. name)
+* to update multiple records at once we can use $in to go throu multiple ids or parameter values. also we add a 3rd argument to the Model.update() function an ibject with mullti: true to triger multiple updates at once e.g
+
+	return Artist.update(
+		{ _id: { $in: _ids } }, 
+		{retired: true}, 
+		{multi: true});	
+* faker library is great for seeding with fake names
