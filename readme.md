@@ -297,3 +297,123 @@ db.collection.createIndex({ property: "indextype"})
 		{retired: true}, 
 		{multi: true});	
 * faker library is great for seeding with fake names
+
+# Section 14 - Mongo with Node and Express
+
+## Lecture 98 - Project Setup
+
+* RESTful Routes
+** Create a Driver - POST /api/drivers
+** Delete a Driver - DELETE /api/drivers/id
+** Edit a Driver - PUT /api/frivers/id
+** Find Drivers - GET /api/drivers
+* Purely Backend API Node/Express
+* mkdir & cd muber
+* npm init
+* npm install --save mongoose mocha express
+
+## Lecture 101 - Express BoilerPlate
+
+* usual stuff import and init express in app.js
+* for what ever reson he puts express server listen command in another file (index.js)
+* we want to test our express up, so to test our http requests we install supertest: npm install --save supertest
+* we create a test folder and an app_test js file
+* we import supertest as request (naming convention), asser and the app
+* mocha tests to http are async so we use done
+* supertest is use by using the syntax e.g
+		request(app)
+			.get('/api')
+			.end((end,response) => {
+				assert(response.body.hi === 'there');
+				done();
+			});
+* this is a simple test to get /api in app server. the end() err is not related to the express server but to the supertest internal. we care about response to extract data for assert like status and body
+
+## Lecture 105 - Project Structure
+
+* he breaks the express logic in a router file containing only the routes separating the reply functions and putting the in controller whigh instracts with the model (mongoose model classes)
+* the import flow is index -> app -> routes -> drivers_controller
+* drivers_controller exports functions implenting the reply logic
+* routes exports afunction that take app and implements/invokes the routes 
+* we implement post /api/drivers route
+* express is not good at parsig request body as it comes in chunks. we use body parser library to solve it : npm install --save body-parser
+* body parser is a middleware . we use it globally with app.use(). we MUST put it before route invokation in app.js
+* in supertest we can send test data in a post route test with send() e.g
+request(app)
+			.post('/api/drivers')
+			.send({ email: 'bada@bada.de'})
+* we import our Driver Model into test file.js not with the default export but with const Driver = mongoose.model('driver'); This is done as mocha and mongoose complain when we import the already define model for duplicates. its a workaround
+* we use Model.create(req.body) to persist data to db.
+
+## Lecture 114 - Testing with Postman
+
+* we issue a post request to localhost:3050/api/drivers with boy raw-.json passing a json object 
+* when we enter nothing we wait forever
+* we need to catch the error from mngoose returnign status 400somthing
+
+## Lecture 116 - Separate Test Database
+
+* we need to set a test DB to drop everything before test
+* we introduce the process environemnt NODE_ENV (process.env.NOD_ENV)
+* we correctly set this variable anytime the server starts. a way is to do it in package.json test script : "test": "NODE_ENV=test nodemon --exec 'mocha --recursive -R min'"
+* in app.js we wrap nongoose connection to the dev db in an if statetemtn
+that checks that process.env.NODE_ENV !== 'test'
+* we add a test_helper.js file in test folder
+* in there we add a before() hook to the mocha and connect to the test db
+* only mocha runs the test files (test folder?!?!) so we dont need to check node environment
+* we also add a handler to run the tests only after we have connected to the db. using promises : mongoose.connection.once('open').on('error')
+		.once('open', ()=> done())
+		.on('error', err => {
+			console.warn('Warning',err);
+		});
+* we drop the drivers collection before each test with the beforeEach hook in test_helper.
+beforeEach(done => {
+	const { drivers} => mongoose.connection.collections;
+	drivers.drop()
+		.then(() => done())
+		.catch(() => done());
+});
+
+## Lecture 117 - Express Middleware
+
+* flow: req->middleware->middleware->route_handler->res
+											|_> (ERROR) -> middleware->res
+* we write a global middleware with app.use((err,req,res,next) => {}); in app.js
+* to implement the flow above we place its implementation AFTER the route invokation. and we use the err argument IF the routes throws an error to catch it (SMART!!!).it probably catches express errors
+* we move between middlewares with next. to implement the error catching flow we put a .catch() to catch the promise reject from mongoose in drivers post route passing next to move to the custom error handling middleware 			.then(driver => res.send(driver))
+			.catch(next);
+* we also need to pass next as 3rd argument after req res in the drivers route implementation (controller) 
+* in put route /api/drivers/:id :id is a wildcard. we can put whateverthere. we extract the data in the route hadler by accessing req.params.id as id is the properyname of the wildcard
+* Model.findByIdAndUpdate does not return the updated record in resolve promise. just some statistics. so we need to call again findById to get the object back
+
+## Lecture 122 - Geography in MOngoDB
+
+* mongo uses lat and log for geolocation [Longitude, Latitude]
+* can natively calculate distanse in 2d and 2d Sphere
+
+## Lecture 123 - GeoJSON Schema
+
+* www.geojson.org shows the way geojson is structured
+* we add  a new Schema in our drivers.js called PointSchema. it has 2 attributes type and coordinates. type is a string with default value Point and coordinates an array of numbers with an index of 2dsphere for ultra fast search based on 2d  sphere distance
+const PointSchema = new Schema({
+	type: { type: String, default: 'Point' },
+	coordinates: { type: [Number], index: '2dsphere' }
+});
+* we embed this schema in our drivers schema as geometry
+* to extract request parameters from a get request we extract them from req.query
+* Model.GeoNear() is deprecated. use the follwing code instead
+Driver.find({
+        	'geometry.coordinates': {
+            	$nearSphere: {
+                	$geometry: {
+                    	type: "Point",
+                    	coordinates: [lng, lat]
+                	},
+                $maxDistance: 200000
+            }
+        }
+    })
+* we write a test queriying route get('/api/drivers?lng=-80&lat=25')
+* no success. we check that index is missing in DB collectionm
+* this is because after each test we drop the db. but schema is created only at the beginning so it is not recreated
+* we need to add the follwing to drivers.drop() in beforeEach hook 		.then(() => drivers.ensureIndex({'geometry.coordinates': '2dsphere' }))
