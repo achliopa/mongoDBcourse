@@ -228,3 +228,17 @@ User.find({})
 			.skip(1)
 			.limit(2)
 			.then((users) =>
+
+# Section 12 - Project
+
+## Lecture 70 - Project Setup
+
+* clone project from git@github.com:StephenGrider/UpStarMusic.git (git clone ...)
+* cd to UpStarMusic folder and run npm install
+* start project with npm run start
+* app is native using a pacakge called electron! (https://electronjs.org/)
+
+## Lecture 73 - Album Schema
+
+* we implement Artist Schema + Model, Album Schema and embedd Album Schema in Artist as as Subdocumet
+* first query: find random artist solution Artist.findById(_id);
